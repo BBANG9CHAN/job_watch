@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}설정 · Job Watch{% endblock %}
+{% block content %}
+<h1>설정</h1>
+
+<form method="post" action="/settings" class="card settings-form">
+  <label class="field">
+    <span>디스코드 웹훅 URL <em>채널 설정 → 연동 → 웹후크 → 새 웹후크 → URL 복사</em></span>
+    <input name="discord_webhook_url" value="{{ settings.discord_webhook_url }}" placeholder="https://discord.com/api/webhooks/..." autocomplete="off">
+  </label>
+  <div class="grid2">
+    <label class="field">
+      <span>수집 주기(분) <em>최소 10분</em></span>
+      <input name="interval_minutes" type="number" min="10" step="5" value="{{ settings.interval_minutes }}">
+    </label>
+    <label class="field">
+      <span>방해금지 시간 <em>예: 0-8 → 0시~8시 알림 보류</em></span>
+      <input name="quiet_hours" value="{{ settings.quiet_hours }}" placeholder="비워두면 항상 알림">
+    </label>
+  </div>
+  <label class="field">
+    <span>대시보드 외부 주소 <em>디스코드 메시지에 붙일 링크 (외부 접속을 설정했다면)</em></span>
+    <input name="public_url" value="{{ settings.public_url }}" placeholder="https://...">
+  </label>
+  <div class="row">
+    <button class="btn">저장</button>
+    <button class="btn btn-ghost" formaction="/settings/test-discord">테스트 메시지 보내기</button>
+  </div>
+</form>
+
+<div class="card">
+  <h3>사이트별 수집 상태</h3>
+  {% if state.last_summary %}<p class="muted small">최근 주기: {{ state.last_summary }}</p>{% endif %}
+  <table class="table">
+    <thead><tr><th>사이트</th><th>상태</th><th>가져온 공고</th><th>마지막 수집</th></tr></thead>
+    <tbody>
+    {% for key, s in SITES.items() %}
+      {% set r = runs.get(key) %}
+      <tr>
+        <td><a href="{{ s.home }}" target="_blank" rel="noopener"><span class="badge" style="--c: {{ s.color }}">{{ s.label }}</span></a></td>
+        <td>
+          {% if not r %}<span class="muted">-</span>
+          {% elif r.ok and not r.error %}<span class="ok">정상</span>
+          {% elif r.ok %}<span class="warn" title="{{ r.error }}">일부 실패</span>
+          {% else %}<span class="err" title="{{ r.error }}">실패</span>{% endif %}
+        </td>
+        <td>{{ r.fetched if r else '-' }}</td>
+        <td class="small"><time data-rel="{{ r.finished_at if r else '' }}">{{ r.finished_at if r else '-' }}</time></td>
+      </tr>
+      {% if r and r.error %}<tr class="error-row"><td colspan="4">{{ r.error }}</td></tr>{% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted small">사이트 구조가 바뀌면 '실패'가 뜰 수 있어요. 터미널에서 <code>python run.py check 사이트명 검색어</code>로 개별 확인할 수 있습니다.</p>
+</div>
+
+<div class="card">
+  <h3>접속 보안</h3>
+  {% if password_on %}
+    <p>비밀번호 보호가 켜져 있어요. <a href="/logout">로그아웃</a></p>
+  {% else %}
+    <p class="warn">비밀번호 보호가 꺼져 있어요. 외부에서 접속하게 열어둘 거라면 <code>.env</code>에 <code>APP_PASSWORD</code>를 설정하고 서버를 다시 시작하세요.</p>
+  {% endif %}
+</div>
+{% endblock %}

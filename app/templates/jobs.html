@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_macros.html" import crawl_box, job_card %}
+{% block title %}공고 · Job Watch{% endblock %}
+{% block content %}
+<section class="status-row">
+  <div class="stats">
+    <a class="stat" href="/jobs?days=1"><b>{{ stats.today or 0 }}</b><span>오늘 신규</span></a>
+    <a class="stat" href="/jobs"><b>{{ stats.total or 0 }}</b><span>전체</span></a>
+    <a class="stat" href="/jobs?status=star"><b>{{ stats.starred or 0 }}</b><span>관심</span></a>
+    <a class="stat" href="/"><b>{{ stats.applied or 0 }}</b><span>지원함</span></a>
+  </div>
+  {{ crawl_box(state) }}
+</section>
+
+<form class="filters" method="get" action="/jobs" id="filters">
+  <input type="search" name="q" value="{{ filters.q }}" placeholder="제목·회사·태그 검색" class="grow">
+  <select name="watch">
+    <option value="0">모든 규칙</option>
+    {% for w in watches %}<option value="{{ w.id }}" {{ 'selected' if filters.watch == w.id }}>{{ w.name }}</option>{% endfor %}
+  </select>
+  <select name="site">
+    <option value="">모든 사이트</option>
+    {% for key, s in SITES.items() %}<option value="{{ key }}" {{ 'selected' if filters.site == key }}>{{ s.label }}</option>{% endfor %}
+  </select>
+  <select name="days">
+    {% for v, label in [(0, '전체 기간'), (1, '오늘'), (3, '최근 3일'), (7, '최근 7일'), (30, '최근 30일')] %}
+      <option value="{{ v }}" {{ 'selected' if filters.days == v }}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="status">
+    {% for v, label in [('', '숨김 제외'), ('star', '★ 관심'), ('applied', '✓ 지원함'), ('hidden', '숨긴 공고'), ('all', '전부')] %}
+      <option value="{{ v }}" {{ 'selected' if filters.status == v }}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <noscript><button class="btn">적용</button></noscript>
+</form>
+
+<div class="list-head">
+  <p class="muted small">{{ total }}건{% if pages > 1 %} · {{ page }}/{{ pages }} 페이지{% endif %}</p>
+  {% if total %}
+  <button class="btn btn-ghost btn-small" id="export-btn" data-count="{{ total }}"
+          title="지금 보고 있는 목록(필터 적용)을 사이트별로 정리해서 디스코드로 보냅니다">📤 디스코드로 보내기</button>
+  {% endif %}
+</div>
+
+{% if not items %}
+  <div class="empty">
+    {% if state.last_finished %}
+      조건에 맞는 공고가 없어요.
+    {% else %}
+      아직 수집한 공고가 없어요. 서버가 시작되고 잠시 후 첫 수집이 진행됩니다.
+    {% endif %}
+  </div>
+{% endif %}
+
+<ul class="jobs" data-status-filter="{{ filters.status }}">
+{% for j in items %}{{ job_card(j) }}{% endfor %}
+</ul>
+
+{% if pages > 1 %}
+<nav class="pager">
+  {% if page > 1 %}<a class="btn btn-ghost" href="{{ page_url(page - 1) }}">← 이전</a>{% endif %}
+  <span class="muted">{{ page }} / {{ pages }}</span>
+  {% if page < pages %}<a class="btn btn-ghost" href="{{ page_url(page + 1) }}">다음 →</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

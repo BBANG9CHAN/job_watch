@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "_macros.html" import crawl_box, job_card %}
+{% block content %}
+{% set counts = board.counts %}
+<section class="home-stats">
+  <a class="stat stat-applied" href="#col-applied"><b>{{ counts.applied }}</b><span>접수</span></a>
+  <a class="stat stat-progress" href="#col-progress"><b>{{ counts.progress }}</b><span>진행중</span></a>
+  <a class="stat stat-offer" href="#col-offer"><b>{{ counts.offer }}</b><span>합격</span></a>
+  <a class="stat stat-rejected" href="#col-rejected"><b>{{ counts.rejected }}</b><span>불합격</span></a>
+  <a class="stat stat-new" href="/jobs?days=1"><b>{{ stats.today or 0 }}</b><span>오늘 새 공고</span></a>
+</section>
+
+{% if board.upcoming %}
+<section class="card upcoming">
+  <h3>📅 다가오는 일정</h3>
+  <ul>
+  {% for a in board.upcoming %}
+    <li>
+      <button class="upcoming-item" data-app-key="{{ a.job_key }}">
+        <span class="dday {{ 'dday-today' if a.d_day <= 1 }}">{{ 'D-DAY' if a.d_day == 0 else 'D-' ~ a.d_day }}</span>
+        <span class="upcoming-text"><b>{{ a.company or a.title }}</b> {{ a.step or a.stage_label }}</span>
+        <span class="muted small">{{ a.next_date[5:].replace('-', '/') }}</span>
+      </button>
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section id="board-section">
+  <div class="section-head">
+    <h2>지원 현황</h2>
+    <button class="btn btn-small" data-app-new>＋ 직접 추가</button>
+  </div>
+  {% if not board.total %}
+    <p class="empty small">
+      아직 지원 기록이 없어요. <a href="/jobs">공고 목록</a>에서 <b>✓</b> 를 누르거나,
+      회사 홈페이지 등에서 지원한 건은 <b>＋ 직접 추가</b>로 넣어 보세요.
+    </p>
+  {% endif %}
+  <div class="board">
+    {% for stage, label in STAGES.items() %}
+    {% set items = board.columns[stage] %}
+    <div class="col" id="col-{{ stage }}">
+      <div class="col-head">
+        <span class="stage stage-{{ stage }}">{{ label }}</span>
+        <span class="muted small">{{ items | length }}</span>
+      </div>
+      {% for a in items %}
+        <button class="app-card stage-{{ stage }} {{ 'is-extra' if loop.index > 6 }}" data-app-key="{{ a.job_key }}">
+          <span class="app-company">{{ a.company or '회사명 없음' }}</span>
+          <span class="app-title">{{ a.title }}</span>
+          <span class="app-meta">
+            {% if a.step and stage != 'applied' %}<span class="app-step">{{ a.step }}</span>{% endif %}
+            {% if stage in ('applied', 'progress') and a.d_day is not none and a.d_day >= 0 %}
+              <span class="dday {{ 'dday-today' if a.d_day <= 1 }}">{{ 'D-DAY' if a.d_day == 0 else 'D-' ~ a.d_day }}</span>
+            {% endif %}
+            {% if stage == 'applied' and a.days_since is not none %}
+              <span title="지원한 지 {{ a.days_since }}일">지원 {{ '오늘' if a.days_since == 0 else a.days_since ~ '일 전' }}</span>
+            {% endif %}
+            <span>{{ a.site_label }}</span>
+          </span>
+        </button>
+      {% else %}
+        <p class="col-empty muted small">없음</p>
+      {% endfor %}
+      {% if items | length > 6 %}
+        <button class="btn btn-ghost btn-small show-more" data-more="{{ items | length - 6 }}">{{ items | length - 6 }}건 더 보기</button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>새 공고</h2>
+    <a class="small" href="/jobs">전체 보기 →</a>
+  </div>
+  <div class="status-row">{{ crawl_box(state) }}</div>
+  {% if recent %}
+    <ul class="jobs" data-status-filter="">
+    {% for j in recent %}{{ job_card(j) }}{% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty small">아직 수집한 공고가 없어요.</p>
+  {% endif %}
+</section>
+{% endblock %}

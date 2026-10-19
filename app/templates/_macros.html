@@ -1,0 +1,54 @@
+{% macro crawl_box(state) %}
+<div class="crawl-box">
+  <div class="crawl-info" id="crawl-info" data-running="{{ 'true' if state.running else 'false' }}">
+    {% if state.running %}
+      <span class="dot dot-run"></span> 수집 중…
+    {% elif state.last_finished %}
+      <span class="dot dot-ok"></span> 마지막 수집 <time data-rel="{{ state.last_finished }}">{{ state.last_finished }}</time>
+      {% if state.next_run %}<span class="muted"> · 다음 <time data-rel="{{ state.next_run }}">{{ state.next_run }}</time></span>{% endif %}
+    {% else %}
+      <span class="dot"></span> 아직 수집 전{% if state.next_run %} · 곧 시작{% endif %}
+    {% endif %}
+    {% if state.last_summary %}<div class="muted small">{{ state.last_summary }}</div>{% endif %}
+  </div>
+  <button class="btn" id="crawl-btn" {{ 'disabled' if state.running }}>지금 수집</button>
+</div>
+{% endmacro %}
+
+{% macro job_card(j) %}
+{% set site = SITES.get(j.site, {'label': j.site, 'color': '#888'}) %}
+{% set keys = [j.key] + (j.others | map(attribute='key') | list) %}
+<li class="job status-{{ j.status or 'none' }}" data-keys="{{ keys | join(',') }}" data-seen="{{ j.first_seen }}"
+    data-app-key="{{ j.app_key or j.key }}" data-app-stage="{{ j.app_stage or '' }}">
+  <div class="job-main">
+    <div class="job-top">
+      <span class="badge" style="--c: {{ site.color }}">{{ site.label }}</span>
+      {% for o in j.others %}
+        {% set os = SITES.get(o.site, {'label': o.site, 'color': '#888'}) %}
+        <a class="badge badge-ghost" style="--c: {{ os.color }}" href="{{ o.url }}" target="_blank" rel="noopener" title="같은 공고 · {{ os.label }}">+{{ os.label }}</a>
+      {% endfor %}
+      <span class="stage stage-{{ j.app_stage or 'none' }} app-badge" {{ 'hidden' if not j.app_stage }}>
+        {{- STAGES.get(j.app_stage, '') }}{% if j.app_step %} · {{ j.app_step }}{% endif -%}
+      </span>
+      <span class="new-badge" hidden>NEW</span>
+      <time class="muted small seen" data-rel="{{ j.first_seen }}" title="처음 발견 {{ j.first_seen }}">{{ j.first_seen }}</time>
+    </div>
+    <a class="job-title" href="{{ j.url }}" target="_blank" rel="noopener">{{ j.title }}</a>
+    <div class="job-company">{{ j.company or '회사명 없음' }}</div>
+    <div class="job-meta">
+      {% if j.location %}<span>📍 {{ j.location }}</span>{% endif %}
+      {% if j.career %}<span>💼 {{ j.career }}</span>{% endif %}
+      {% if j.deadline %}<span>⏰ {{ j.deadline }}</span>{% endif %}
+      {% if j.posted %}<span class="muted">등록 {{ j.posted }}</span>{% endif %}
+    </div>
+    {% if j.tags %}
+    <div class="tags">{% for t in j.tags[:5] %}<span class="tag">{{ t }}</span>{% endfor %}</div>
+    {% endif %}
+  </div>
+  <div class="job-actions">
+    <button class="icon-btn act-star" data-status="star" title="관심">★</button>
+    <button class="icon-btn act-app {{ 'has-app' if j.app_stage }}" title="{{ '지원 기록 보기·수정' if j.app_stage else '지원했어요 (지원 현황에 추가)' }}">✓</button>
+    <button class="icon-btn act-hidden" data-status="hidden" title="숨기기">✕</button>
+  </div>
+</li>
+{% endmacro %}

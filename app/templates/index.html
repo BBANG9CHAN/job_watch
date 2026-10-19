@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="status-row">
+  <div class="stats">
+    <a class="stat" href="/?days=1"><b>{{ stats.today or 0 }}</b><span>오늘 신규</span></a>
+    <a class="stat" href="/"><b>{{ stats.total or 0 }}</b><span>전체</span></a>
+    <a class="stat" href="/?status=star"><b>{{ stats.starred or 0 }}</b><span>관심</span></a>
+    <a class="stat" href="/?status=applied"><b>{{ stats.applied or 0 }}</b><span>지원함</span></a>
+  </div>
+  <div class="crawl-box">
+    <div class="crawl-info" id="crawl-info"
+         data-running="{{ 'true' if state.running else 'false' }}">
+      {% if state.running %}
+        <span class="dot dot-run"></span> 수집 중…
+      {% elif state.last_finished %}
+        <span class="dot dot-ok"></span> 마지막 수집 <time data-rel="{{ state.last_finished }}">{{ state.last_finished }}</time>
+        {% if state.next_run %}<span class="muted"> · 다음 <time data-rel="{{ state.next_run }}">{{ state.next_run }}</time></span>{% endif %}
+      {% else %}
+        <span class="dot"></span> 아직 수집 전{% if state.next_run %} · 곧 시작{% endif %}
+      {% endif %}
+      {% if state.last_summary %}<div class="muted small">{{ state.last_summary }}</div>{% endif %}
+    </div>
+    <button class="btn" id="crawl-btn" {{ 'disabled' if state.running }}>지금 수집</button>
+  </div>
+</section>
+
+<form class="filters" method="get" action="/" id="filters">
+  <input type="search" name="q" value="{{ filters.q }}" placeholder="제목·회사·태그 검색" class="grow">
+  <select name="watch">
+    <option value="0">모든 규칙</option>
+    {% for w in watches %}<option value="{{ w.id }}" {{ 'selected' if filters.watch == w.id }}>{{ w.name }}</option>{% endfor %}
+  </select>
+  <select name="site">
+    <option value="">모든 사이트</option>
+    {% for key, s in SITES.items() %}<option value="{{ key }}" {{ 'selected' if filters.site == key }}>{{ s.label }}</option>{% endfor %}
+  </select>
+  <select name="days">
+    {% for v, label in [(0, '전체 기간'), (1, '오늘'), (3, '최근 3일'), (7, '최근 7일'), (30, '최근 30일')] %}
+      <option value="{{ v }}" {{ 'selected' if filters.days == v }}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="status">
+    {% for v, label in [('', '숨김 제외'), ('star', '★ 관심'), ('applied', '✓ 지원함'), ('hidden', '숨긴 공고'), ('all', '전부')] %}
+      <option value="{{ v }}" {{ 'selected' if filters.status == v }}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <noscript><button class="btn">적용</button></noscript>
+</form>
+
+<div class="list-head">
+  <p class="muted small">{{ total }}건{% if pages > 1 %} · {{ page }}/{{ pages }} 페이지{% endif %}</p>
+  {% if total %}
+  <button class="btn btn-ghost btn-small" id="export-btn" data-count="{{ total }}"
+          title="지금 보고 있는 목록(필터 적용)을 사이트별로 정리해서 디스코드로 보냅니다">📤 디스코드로 보내기</button>
+  {% endif %}
+</div>
+
+{% if not items %}
+  <div class="empty">
+    {% if state.last_finished %}
+      조건에 맞는 공고가 없어요.
+    {% else %}
+      아직 수집한 공고가 없어요. 서버가 시작되고 잠시 후 첫 수집이 진행됩니다.
+    {% endif %}
+  </div>
+{% endif %}
+
+<ul class="jobs" data-status-filter="{{ filters.status }}">
+{% for j in items %}
+  {% set site = SITES.get(j.site, {'label': j.site, 'color': '#888'}) %}
+  {% set keys = [j.key] + (j.others | map(attribute='key') | list) %}
+  <li class="job status-{{ j.status or 'none' }}" data-keys="{{ keys | join(',') }}" data-seen="{{ j.first_seen }}">
+    <div class="job-main">
+      <div class="job-top">
+        <span class="badge" style="--c: {{ site.color }}">{{ site.label }}</span>
+        {% for o in j.others %}
+          {% set os = SITES.get(o.site, {'label': o.site, 'color': '#888'}) %}
+          <a class="badge badge-ghost" style="--c: {{ os.color }}" href="{{ o.url }}" target="_blank" rel="noopener" title="같은 공고 · {{ os.label }}">+{{ os.label }}</a>
+        {% endfor %}
+        <span class="new-badge" hidden>NEW</span>
+        <time class="muted small seen" data-rel="{{ j.first_seen }}" title="처음 발견 {{ j.first_seen }}">{{ j.first_seen }}</time>
+      </div>
+      <a class="job-title" href="{{ j.url }}" target="_blank" rel="noopener">{{ j.title }}</a>
+      <div class="job-company">{{ j.company or '회사명 없음' }}</div>
+      <div class="job-meta">
+        {% if j.location %}<span>📍 {{ j.location }}</span>{% endif %}
+        {% if j.career %}<span>💼 {{ j.career }}</span>{% endif %}
+        {% if j.deadline %}<span>⏰ {{ j.deadline }}</span>{% endif %}
+        {% if j.posted %}<span class="muted">등록 {{ j.posted }}</span>{% endif %}
+      </div>
+      {% if j.tags %}
+      <div class="tags">{% for t in j.tags[:5] %}<span class="tag">{{ t }}</span>{% endfor %}</div>
+      {% endif %}
+    </div>
+    <div class="job-actions">
+      <button class="icon-btn act-star" data-status="star" title="관심">★</button>
+      <button class="icon-btn act-applied" data-status="applied" title="지원함">✓</button>
+      <button class="icon-btn act-hidden" data-status="hidden" title="숨기기">✕</button>
+    </div>
+  </li>
+{% endfor %}
+</ul>
+
+{% if pages > 1 %}
+<nav class="pager">
+  {% if page > 1 %}<a class="btn btn-ghost" href="{{ page_url(page - 1) }}">← 이전</a>{% endif %}
+  <span class="muted">{{ page }} / {{ pages }}</span>
+  {% if page < pages %}<a class="btn btn-ghost" href="{{ page_url(page + 1) }}">다음 →</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

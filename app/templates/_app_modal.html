@@ -1,0 +1,61 @@
+<dialog id="app-modal" class="modal" aria-labelledby="am-title">
+  <form id="app-form" class="modal-body" autocomplete="off">
+    <input type="hidden" name="key">
+    <header class="modal-head">
+      <div class="modal-heading">
+        <div class="muted small" id="am-sub"></div>
+        <h2 id="am-title">지원 기록</h2>
+        <a id="am-link" class="small" target="_blank" rel="noopener" hidden>공고 열기 ↗</a>
+      </div>
+      <button type="button" class="icon-btn" data-close aria-label="닫기">✕</button>
+    </header>
+
+    <div id="am-manual" hidden>
+      <div class="grid2">
+        <label class="field"><span>회사</span><input name="company" maxlength="100"></label>
+        <label class="field"><span>공고 제목</span><input name="title" maxlength="200"></label>
+      </div>
+      <label class="field"><span>링크 <em>선택</em></span><input name="url" type="url" maxlength="500" placeholder="https://"></label>
+    </div>
+
+    <fieldset class="field">
+      <span>단계</span>
+      <div class="seg">
+        {% for k, label in STAGES.items() %}
+        <label class="seg-item stage-{{ k }}"><input type="radio" name="stage" value="{{ k }}"><span>{{ label }}</span></label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <label class="field">
+      <span>진행 상황 <em>예: 서류 합격, 1차 면접</em></span>
+      <input name="step" maxlength="60">
+    </label>
+    <div class="chips" id="am-steps">
+      {% for s in ['서류 검토중', '서류 합격', '과제 전형', '1차 면접', '2차 면접', '최종 면접', '처우 협의'] %}
+        <button type="button" class="chip">{{ s }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="grid2">
+      <label class="field"><span>지원일</span><input type="date" name="applied_at"></label>
+      <label class="field"><span>다음 일정 <em>면접일 등</em></span><input type="date" name="next_date"></label>
+    </div>
+
+    <label class="field"><span>메모</span><textarea name="memo" rows="3" maxlength="2000" placeholder="면접 질문, 연락받은 담당자, 연봉 조건 등"></textarea></label>
+
+    <div id="am-history" class="history" hidden>
+      <span class="history-title">기록</span>
+      <ol></ol>
+    </div>
+
+    <p class="err small" id="am-error" hidden></p>
+
+    <footer class="modal-foot">
+      <button type="button" class="btn btn-danger btn-small" id="am-delete" hidden>기록 삭제</button>
+      <span class="grow"></span>
+      <button type="button" class="btn btn-ghost" data-close>취소</button>
+      <button type="submit" class="btn" id="am-save">저장</button>
+    </footer>
+  </form>
+</dialog>

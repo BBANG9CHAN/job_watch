@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>로그인 · Job Watch</title>
+  <link rel="stylesheet" href="/static/style.css?v=4">
+</head>
+<body class="login-body">
+  <form method="post" action="/login" class="card login-card">
+    <h1>🔭 Job Watch</h1>
+    <input type="hidden" name="next" value="{{ next }}">
+    <label class="field">
+      <span>비밀번호</span>
+      <input type="password" name="password" autofocus required autocomplete="current-password">
+    </label>
+    {% if error %}<p class="err small">비밀번호가 틀렸어요.</p>{% endif %}
+    <button class="btn">들어가기</button>
+  </form>
+</body>
+</html>

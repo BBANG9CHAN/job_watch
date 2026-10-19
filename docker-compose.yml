@@ -1,0 +1,16 @@
+# 사용법:  cp .env.example .env  →  docker compose up -d --build
+services:
+  job-watch:
+    build: .
+    container_name: job-watch
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0   # 컨테이너 안에서는 항상 0.0.0.0 (.env 의 HOST 값을 덮어씀)
+      PORT: 8000
+    ports:
+      # 기본은 이 서버 자신에서만 접속 가능. 같은 집 네트워크의 다른 기기에서 바로 열려면
+      # "8000:8000" 으로 바꾸고 .env 에 APP_PASSWORD 를 꼭 설정하세요.
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./data:/app/data
